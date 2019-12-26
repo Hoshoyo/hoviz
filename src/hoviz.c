@@ -181,6 +181,27 @@ hoviz_init_3D()
 }
 
 void
+hoviz_render_line(vec3 start, vec3 end, vec4 color)
+{
+    if(ctx.lines_ptr == 0) {
+        glBindVertexArray(ctx.lines_vao);
+        glBindBuffer(GL_ARRAY_BUFFER, ctx.lines_vbo);
+        ctx.lines_ptr = glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
+        assert(ctx.lines_ptr);
+    }
+
+    HoViz_Vertex_3D* lines = ((HoViz_Vertex_3D*)ctx.lines_ptr) + (2 * ctx.lines_count);
+
+    lines[0].position = start;
+    lines[0].color = color;
+
+    lines[1].position = end;
+    lines[1].color = color;
+
+    ctx.lines_count++;
+}
+
+void
 hoviz_render_vec3_from_start(vec3 start, vec3 v, vec4 color)
 {
     if(ctx.lines_ptr == 0) {
@@ -195,7 +216,7 @@ hoviz_render_vec3_from_start(vec3 start, vec3 v, vec4 color)
     lines[0].position = start;
     lines[0].color = color;
 
-    lines[1].position = v;
+    lines[1].position = gm_vec3_add(v, start);
     lines[1].color = color;
 
     ctx.lines_count++;
@@ -334,8 +355,8 @@ hoviz_flush()
     
     camera_quat_force_matrix_recalculation(&ctx.camera);
 
-    render_lines();
     render_triangles();
+    render_lines();
     render_points();
 
     r64 end_time = os_time_us();
@@ -366,7 +387,7 @@ hoviz_flush()
     glfwPollEvents();
 
     // clear next frame
-    glClear(GL_COLOR_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
     int width, height;
     window_get_size(&width, &height);
     glViewport(0, 0, width, height);
@@ -407,7 +428,7 @@ static void camera_update(Camera* camera, r64 delta_time)
     int* key_states = hoviz_input_state.key_state;
 
     if(hoviz_input_state.mods & GLFW_MOD_SHIFT) {
-        CAMERA_QUAT_MOVEMENT_SPEED_MODIFIER *= 5.0f;
+        CAMERA_QUAT_MOVEMENT_SPEED_MODIFIER /= 5.0f;
     }
 
     if (key_states['W'] || key_states['w']){
@@ -423,4 +444,8 @@ static void camera_update(Camera* camera, r64 delta_time)
         camera_quat_move_right(camera, CAMERA_QUAT_MOVEMENT_SPEED_MODIFIER * CAMERA_VELOCITY * (r32)delta_time);
     }
     handle_mouse_change(hoviz_input_state.mouse_buttons[1].state, hoviz_input_state.mouse_position.x, hoviz_input_state.mouse_position.y);
+}
+
+void hoviz_camera_reset() {
+    camera_quat_init(&ctx.camera, (vec3){3.0f, 3.0f, 10.0f}, -0.01f, -1000.0f, 90.0f);
 }

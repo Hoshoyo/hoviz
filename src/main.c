@@ -88,13 +88,16 @@ int main(int argc, char** argv) {
 	b1.vertices = vecs;
 	b2.vertices = vecs2;
 	
+	glEnable(GL_DEPTH_TEST);
 
+	bool show_faces = true;
+	bool show_mink = true;
 	while(!hoviz_should_close())
 	{
 		// Render the 3 axis
-		hoviz_render_vec3((vec3){10, 0, 0}, (vec4){1.0f, 0.0f, 0.0f, 0.3f});
-		hoviz_render_vec3((vec3){0, 10, 0}, (vec4){0.0f, 1.0f, 0.0f, 0.3f});
-		hoviz_render_vec3((vec3){0, 0, 10}, (vec4){0.0f, 0.0f, 1.0f, 0.3f});
+		//hoviz_render_vec3((vec3){10, 0, 0}, (vec4){1.0f, 0.0f, 0.0f, 0.3f});
+		//hoviz_render_vec3((vec3){0, 10, 0}, (vec4){0.0f, 1.0f, 0.0f, 0.3f});
+		//hoviz_render_vec3((vec3){0, 0, 10}, (vec4){0.0f, 0.0f, 1.0f, 0.3f});
 		hoviz_render_point((vec3){0, 0, 0}, (vec4){0.0f, 1.0f, 0.0f, 1.0f});
 		
 		#if 1
@@ -122,16 +125,25 @@ int main(int argc, char** argv) {
 		if(hoviz_input_state.key_state[GLFW_KEY_F]) {
 			transform(vecs, 8, (vec3){0.0f, -velocity, 0.0f});
 		}
+		if(hoviz_input_state.key_state[GLFW_KEY_T]) {
+			hoviz_camera_reset();
+		}
+		if(hoviz_input_state.key_event[GLFW_KEY_Y]) {
+			show_faces = !show_faces;
+			hoviz_input_state.key_event[GLFW_KEY_Y] = 0;
+		}
+		if(hoviz_input_state.key_event[GLFW_KEY_U]) {
+			show_mink = !show_mink;
+			hoviz_input_state.key_event[GLFW_KEY_U] = 0;
+		}
 		if(hoviz_input_state.key_event[GLFW_KEY_X]) {
 			global_counter++;
 			hoviz_input_state.key_event[GLFW_KEY_X] = 0;
-			printf("Foo1\n");
 		}
 		if(hoviz_input_state.key_event[GLFW_KEY_Z]) {
 			global_counter--;
 			if(global_counter < 0) global_counter = 0;
 			hoviz_input_state.key_event[GLFW_KEY_Z] = 0;
-			printf("Foo2\n");
 		}
 
 		// Render the shapes
@@ -139,8 +151,10 @@ int main(int argc, char** argv) {
 			hoviz_render_point(vecs[i], (vec4){1.0f, 1.0f, 0.0f, 1.0f});
 			hoviz_render_point(vecs2[i], (vec4){0.0f, 1.0f, 1.0f, 1.0f});
 		}
-		for(int i = 0; i < 64; ++i) {
-			hoviz_render_point(minkowski[i], (vec4){1.0f, 1.0f, 1.0f, 1.0f});
+		if(show_mink) {
+			for(int i = 0; i < 64; ++i) {
+				hoviz_render_point(minkowski[i], (vec4){1.0f, 1.0f, 1.0f, 1.0f});
+			}
 		}
 
 		GJK_Support_List sup_list = {0};
@@ -149,10 +163,12 @@ int main(int argc, char** argv) {
 			//expanding_polytope_algorithm(sup_list.list, &b1, &b2);
 			collision_epa(sup_list.list, &b1, &b2);
 			// Render the GJK simplex
-			hoviz_render_triangle(sup_list.list[0], sup_list.list[1], sup_list.list[2], (vec4){0.4f, 0.45f, 1.0f, 0.4f});
-			hoviz_render_triangle(sup_list.list[0], sup_list.list[1], sup_list.list[3], (vec4){0.4f, 0.48f, 1.0f, 0.4f});
-			hoviz_render_triangle(sup_list.list[0], sup_list.list[2], sup_list.list[3], (vec4){0.4f, 0.57f, 1.0f, 0.4f});
-			hoviz_render_triangle(sup_list.list[1], sup_list.list[2], sup_list.list[3], (vec4){0.4f, 0.60f, 1.0f, 0.4f});
+			if(show_faces) {
+				hoviz_render_triangle(sup_list.list[0], sup_list.list[1], sup_list.list[2], (vec4){0.4f, 0.45f, 1.0f, 1.0f});
+				hoviz_render_triangle(sup_list.list[0], sup_list.list[1], sup_list.list[3], (vec4){0.4f, 0.48f, 1.0f, 1.0f});
+				hoviz_render_triangle(sup_list.list[1], sup_list.list[2], sup_list.list[3], (vec4){0.4f, 0.60f, 1.0f, 1.0f});
+				hoviz_render_triangle(sup_list.list[0], sup_list.list[2], sup_list.list[3], (vec4){0.4f, 0.57f, 1.0f, 1.0f});
+			}
 		}
 		#endif
 

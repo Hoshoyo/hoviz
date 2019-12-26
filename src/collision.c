@@ -3,6 +3,10 @@
 #include <light_array.h>
 #include "hoviz.h"
 
+vec4 hoviz_red = (vec4){1.0f, 0.0f, 0.0f, 1.0f};
+vec4 hoviz_green = (vec4){0.0f, 1.0f, 0.0f, 1.0f};
+vec4 hoviz_blue = (vec4){0.0f, 0.0f, 1.0f, 1.0f};
+
 // GJK
 
 static void support_list_add(GJK_Support_List* list, vec3 v) {
@@ -228,6 +232,11 @@ bool collision_gjk_collides(GJK_Support_List* sup_list, Bounding_Shape* b1, Boun
 
 typedef struct {
 	vec3 a;
+	vec3 b;
+} Edge;
+
+typedef struct {
+	vec3 a;
     vec3 b;
 	vec3 c;
     vec3 normal;
@@ -248,10 +257,10 @@ static Face face_new(r32* distance, int index, int* out_index, vec3 v1, vec3 v2,
     f.b = v2;
     f.c = v3;
 
-    //vec3 normal = gm_vec3_cross(gm_vec3_subtract(v2, v1), gm_vec3_subtract(v3, v1));
 	vec3 ba = gm_vec3_subtract(f.b, f.a);
 	vec3 ca = gm_vec3_subtract(f.c, f.a);
 	vec3 normal = gm_vec3_cross(ba, ca);
+	normal = gm_vec3_normalize(normal);
 
 	if(gm_vec3_dot(normal, v1) < 0.0f) {
 		normal = gm_vec3_negative(normal);
@@ -268,6 +277,17 @@ static Face face_new(r32* distance, int index, int* out_index, vec3 v1, vec3 v2,
 	return f;
 }
 
+static int edge_in(Edge* edges, Edge e) {
+	for(int i = 0; i < array_length(edges); ++i) {
+		Edge t = edges[i];
+		
+		if(gm_vec3_equal(t.a, e.a) && gm_vec3_equal(t.b, e.b)) return i;
+		if(gm_vec3_equal(t.b, e.a) && gm_vec3_equal(t.a, e.b)) return i;
+	}
+	return -1;
+}
+
+extern int global_counter;
 vec3 collision_epa(vec3* simplex, Bounding_Shape* b1, Bounding_Shape* b2) {
     // Simplex faces
     // 0 1 2
@@ -278,15 +298,15 @@ vec3 collision_epa(vec3* simplex, Bounding_Shape* b1, Bounding_Shape* b2) {
 	r32 distance = FLT_MAX;
 
 	int index = -1;
-	Face faces[4] = {0};
+	Face* faces = array_new_len(Face, 4);
+	array_length(faces) = 4;
+	faces[0] = face_new(&distance, 0, &index, simplex[0], simplex[1], simplex[2]);
+	faces[1] = face_new(&distance, 1, &index, simplex[0], simplex[1], simplex[3]);
+	faces[2] = face_new(&distance, 2, &index, simplex[1], simplex[2], simplex[3]);
+	faces[3] = face_new(&distance, 3, &index, simplex[0], simplex[2], simplex[3]);
 
-	//while(1) 
+	for(int kk = 0; kk < 1; kk++)
 	{
-		faces[0] = face_new(&distance, 0, &index, simplex[0], simplex[1], simplex[2]);
-		faces[1] = face_new(&distance, 1, &index, simplex[0], simplex[1], simplex[3]);
-		faces[2] = face_new(&distance, 2, &index, simplex[1], simplex[2], simplex[3]);
-		faces[3] = face_new(&distance, 3, &index, simplex[0], simplex[2], simplex[3]);
-
 		// closest face is the face at index
 
 		// Find the new support in the normal direction of the closest face
@@ -297,6 +317,7 @@ vec3 collision_epa(vec3* simplex, Bounding_Shape* b1, Bounding_Shape* b2) {
 		{
 			vec3 penetration = gm_vec3_scalar_product(faces[index].distance, gm_vec3_normalize(faces[index].normal));
 			hoviz_render_vec3(penetration, (vec4){0.3f, 0.3f, 1.0f, 1.0f});
+			array_free(faces);
 			return penetration;
 		}
 
@@ -304,28 +325,72 @@ vec3 collision_epa(vec3* simplex, Bounding_Shape* b1, Bounding_Shape* b2) {
 		distance = FLT_MAX;
 		index = -1;
 
-		r32 f1 = gm_vec3_dot(faces[0].normal, p);
-		r32 f2 = gm_vec3_dot(faces[1].normal, p);
-		r32 f3 = gm_vec3_dot(faces[2].normal, p);
-		r32 f4 = gm_vec3_dot(faces[3].normal, p);
+		
+		Edge* edges = array_new_len(Edge, 16);
+		for(int i = 0; i < array_length(faces); ++i) {
+			// If the face is facing in the direction of the support point
+			// it can be removed
+			r32 r = gm_vec3_dot(faces[i].normal, p);
+			if(r > 0.0f) {
+				Face f = faces[i];
+				array_remove(faces, i);
+				i--;
+				
+				Edge ea = {f.a, f.b};
+				int ea_in = edge_in(edges, ea);
+				if(ea_in != -1) {
+					array_remove(edges, ea_in);
+				} else {
+					array_push(edges, ea);
+				}
 
+				Edge eb = {f.b, f.c};
+				int eb_in = edge_in(edges, eb);
+				if(eb_in != -1) {
+					array_remove(edges, eb_in);
+				} else {
+					array_push(edges, eb);
+				}
+
+				Edge ec = {f.c, f.a};
+				int ec_in = edge_in(edges, ec);
+				if(ec_in != -1) {
+					array_remove(edges, ec_in);
+				} else {
+					array_push(edges, ec);
+				}
+			}
+		}
+		for(int i = 0; i < array_length(edges); ++i) {
+			Face f = face_new(&distance, 0, &index, edges[i].a, edges[i].b, p);
+			array_push(faces, f);
+		}
+		array_free(edges);
+
+		// If the dot is positive, the face is facing the support, meaning the
+		// shared edges can be deleted
+
+		// Debug rendering
 		vec4 color = (vec4) {1.0f, 0.0f, 0.0f, 1.0f};
-		for(int i = 0; i < 4; ++i) {
+		for(int i = 0; i < array_length(faces); ++i) {
 			vec3 centroid = triangle_centroid(faces[i]);
 			r32 dot = gm_vec3_dot(faces[i].normal, p);
+
+			hoviz_render_point(centroid, (vec4){0.5f, 0.5f, 0.5f, 1.0f});
 			if(dot >= 0.0f) {
 				hoviz_render_vec3_from_start(centroid, faces[i].normal, color);
 			} else {
 				hoviz_render_vec3_from_start(centroid, faces[i].normal, (vec4){1.0f, 1.0f, 0.3f, 0.9f});
 			}
 
-			hoviz_render_vec3_from_start(faces[i].a, faces[i].b, (vec4){1.0f, 1.0f, 1.0f, 1.0f});
-			hoviz_render_vec3_from_start(faces[i].b, faces[i].c, (vec4){1.0f, 1.0f, 1.0f, 1.0f});
-			hoviz_render_vec3_from_start(faces[i].c, faces[i].a, (vec4){1.0f, 1.0f, 1.0f, 1.0f});
+			hoviz_render_line(faces[i].a, faces[i].b, (vec4){1.0f, 1.0f, 1.0f, 1.0f});
+			hoviz_render_line(faces[i].b, faces[i].c, (vec4){1.0f, 1.0f, 1.0f, 1.0f});
+			hoviz_render_line(faces[i].c, faces[i].a, (vec4){1.0f, 1.0f, 1.0f, 1.0f});
 		}
 
-		int xx = 0;
+		// 
 	}
+	array_free(faces);
 }
 
 #if 0
