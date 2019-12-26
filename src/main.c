@@ -59,14 +59,37 @@ static void normal_calc(vec3 v1, vec3 v2, vec3 v3) {
 
 int global_counter = 0;
 
+void render_cube(vec3* c, vec4 color) {
+	//hoviz_render_triangle(c[0], c[1], c[2], color);
+	//hoviz_render_triangle(c[2], c[1], c[3], color);
+//
+	//hoviz_render_triangle(c[0], c[2], c[1], color);
+	//hoviz_render_triangle(c[1], c[3], c[5], color);
+
+	hoviz_render_line(c[0], c[1], color);
+	hoviz_render_line(c[1], c[5], color);
+	hoviz_render_line(c[5], c[4], color);
+	hoviz_render_line(c[4], c[0], color);
+
+	hoviz_render_line(c[2], c[3], color);
+	hoviz_render_line(c[3], c[7], color);
+	hoviz_render_line(c[7], c[6], color);
+	hoviz_render_line(c[6], c[2], color);
+
+	hoviz_render_line(c[0], c[2], color);
+	hoviz_render_line(c[1], c[3], color);
+	hoviz_render_line(c[5], c[7], color);
+	hoviz_render_line(c[4], c[6], color);
+}
+
 int main(int argc, char** argv) {
 	hoviz_init_3D();
 
 	vec3 vecs[] = {
-		(vec3){0, 0, 0}, (vec3){1, 0, 0},
-		(vec3){0, 0, 1}, (vec3){1, 0, 1},
-		(vec3){0, 1, 0}, (vec3){1, 1, 0},
-		(vec3){0, 1, 1}, (vec3){1, 1, 1}
+		(vec3){0, 0, 0}, (vec3){1, 0, 0}, // 0 1
+		(vec3){0, 0, 1}, (vec3){1, 0, 1}, // 2 3
+		(vec3){0, 1, 0}, (vec3){1, 1, 0}, // 4 5
+		(vec3){0, 1, 1}, (vec3){1, 1, 1}  // 6 7
 	};
 	transform(vecs, 8, (vec3){3.3f, 0.0f, -1.0f});
 	rotate(vecs, 8, (vec3){0, 1, 0}, 45);
@@ -151,6 +174,9 @@ int main(int argc, char** argv) {
 			hoviz_render_point(vecs[i], (vec4){1.0f, 1.0f, 0.0f, 1.0f});
 			hoviz_render_point(vecs2[i], (vec4){0.0f, 1.0f, 1.0f, 1.0f});
 		}
+		render_cube(vecs, (vec4){1.0f, 1.0f, 0.0f, 1.0f});
+		render_cube(vecs2, (vec4){0.0f, 1.0f, 1.0f, 1.0f});
+
 		if(show_mink) {
 			for(int i = 0; i < 64; ++i) {
 				hoviz_render_point(minkowski[i], (vec4){1.0f, 1.0f, 1.0f, 1.0f});
@@ -160,8 +186,13 @@ int main(int argc, char** argv) {
 		GJK_Support_List sup_list = {0};
 		if(collision_gjk_collides(&sup_list, &b1, &b2)) {
 			assert(sup_list.current_index == 4);
-			//expanding_polytope_algorithm(sup_list.list, &b1, &b2);
-			collision_epa(sup_list.list, &b1, &b2);
+			vec3 penvec = collision_epa(sup_list.list, &b1, &b2);
+
+			transform(b1.vertices, b1.vertex_count, gm_vec3_negative(penvec));
+			//if(hoviz_input_state.key_event[GLFW_KEY_K]) {
+			//	hoviz_input_state.key_event[GLFW_KEY_K] = 0;
+			//}
+
 			// Render the GJK simplex
 			if(show_faces) {
 				hoviz_render_triangle(sup_list.list[0], sup_list.list[1], sup_list.list[2], (vec4){0.4f, 0.45f, 1.0f, 1.0f});
