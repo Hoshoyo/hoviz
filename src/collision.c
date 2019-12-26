@@ -251,30 +251,40 @@ vec3 triangle_centroid(Face f) {
 	return (vec3) {ox, oy, oz};
 }
 
-static Face face_new(r32* distance, int index, int* out_index, vec3 v1, vec3 v2, vec3 v3) {
+static Face face_new(vec3 v1, vec3 v2, vec3 v3) {
     Face f = {0};
     f.a = v1;
     f.b = v2;
     f.c = v3;
-
-	vec3 ba = gm_vec3_subtract(f.b, f.a);
-	vec3 ca = gm_vec3_subtract(f.c, f.a);
-	vec3 normal = gm_vec3_cross(ba, ca);
-	normal = gm_vec3_normalize(normal);
-
-	if(gm_vec3_dot(normal, v1) < 0.0f) {
-		normal = gm_vec3_negative(normal);
-	}
-
-	r32 d = gm_vec3_dot(f.a, normal);
-	f.distance = d;
-	f.normal = normal;
-
-	if(f.distance < *distance) {
-		*distance = f.distance;
-		*out_index = index;
-	}
 	return f;
+}
+
+static int closest_face(Face* faces) {
+	r32 distance = FLT_MAX;
+	int index = -1;
+	for(int i = 0; i < array_length(faces); ++i) {
+		Face f = faces[i];
+		vec3 ba = gm_vec3_subtract(f.b, f.a);
+		vec3 ca = gm_vec3_subtract(f.c, f.a);
+		vec3 normal = gm_vec3_cross(ba, ca);
+		normal = gm_vec3_normalize(normal);
+
+		if(gm_vec3_dot(normal, f.a) < 0.0f) {
+			normal = gm_vec3_negative(normal);
+		}
+
+		r32 d = gm_vec3_dot(f.a, normal);
+
+		faces[i].distance = d;
+		faces[i].normal = normal;
+
+		if(d < distance) {
+			distance = d;
+			index = i;
+		}
+	}
+
+	return index;
 }
 
 static int edge_in(Edge* edges, Edge e) {
@@ -295,23 +305,46 @@ vec3 collision_epa(vec3* simplex, Bounding_Shape* b1, Bounding_Shape* b2) {
     // 1 2 3
     // 0 2 3
 
-	r32 distance = FLT_MAX;
-
 	int index = -1;
 	Face* faces = array_new_len(Face, 4);
 	array_length(faces) = 4;
-	faces[0] = face_new(&distance, 0, &index, simplex[0], simplex[1], simplex[2]);
-	faces[1] = face_new(&distance, 1, &index, simplex[0], simplex[1], simplex[3]);
-	faces[2] = face_new(&distance, 2, &index, simplex[1], simplex[2], simplex[3]);
-	faces[3] = face_new(&distance, 3, &index, simplex[0], simplex[2], simplex[3]);
+	faces[0] = face_new(simplex[0], simplex[1], simplex[2]);
+	faces[1] = face_new(simplex[0], simplex[1], simplex[3]);
+	faces[2] = face_new(simplex[1], simplex[2], simplex[3]);
+	faces[3] = face_new(simplex[0], simplex[2], simplex[3]);
 
-	for(int kk = 0; kk < 1; kk++)
+	for(int kk = 0; kk < 100; kk++)
 	{
 		// closest face is the face at index
+		index = closest_face(faces);
 
 		// Find the new support in the normal direction of the closest face
 		vec3 p = collision_gjk_support(b1, b2, faces[index].normal);
-		hoviz_render_point(p, (vec4){1.0f, 0.0f, 1.0f, 1.0f});
+
+		if(global_counter == kk) {
+			hoviz_render_point(p, (vec4){1.0f, 0.0f, 1.0f, 1.0f});
+			// Debug rendering
+			vec4 color = (vec4) {1.0f, 0.0f, 0.0f, 1.0f};
+			for(int i = 0; i < array_length(faces); ++i) {
+				vec3 centroid = triangle_centroid(faces[i]);
+				//r32 dot = gm_vec3_dot(faces[i].normal, p);
+				r32 dot = gm_vec3_dot(faces[i].normal, gm_vec3_subtract(p, centroid));
+
+				hoviz_render_point(centroid, (vec4){0.5f, 0.5f, 0.5f, 1.0f});
+				if(dot >= 0.0f) {
+					hoviz_render_vec3_from_start(centroid, faces[i].normal, color);
+				} else {
+					hoviz_render_vec3_from_start(centroid, faces[i].normal, (vec4){1.0f, 1.0f, 0.3f, 0.9f});
+				}
+
+				if(index == i) {
+					hoviz_render_triangle(faces[i].a, faces[i].b, faces[i].c, (vec4){0.0f, 1.0f, 1.0f, 0.4f});
+				} 
+				hoviz_render_line(faces[i].a, faces[i].b, (vec4){1.0f, 1.0f, 1.0f, 1.0f});
+				hoviz_render_line(faces[i].b, faces[i].c, (vec4){1.0f, 1.0f, 1.0f, 1.0f});
+				hoviz_render_line(faces[i].c, faces[i].a, (vec4){1.0f, 1.0f, 1.0f, 1.0f});
+			}
+		}
 
 		if(gm_vec3_dot(p, faces[index].normal) - faces[index].distance < 0.001f) 
 		{
@@ -322,15 +355,17 @@ vec3 collision_epa(vec3* simplex, Bounding_Shape* b1, Bounding_Shape* b2) {
 		}
 
 		// Expand polytope
-		distance = FLT_MAX;
-		index = -1;
-
 		
 		Edge* edges = array_new_len(Edge, 16);
 		for(int i = 0; i < array_length(faces); ++i) {
 			// If the face is facing in the direction of the support point
 			// it can be removed
-			r32 r = gm_vec3_dot(faces[i].normal, p);
+			vec3 centroid = triangle_centroid(faces[i]);
+			r32 r = gm_vec3_dot(faces[i].normal, gm_vec3_subtract(p, centroid));
+
+			//r32 r = gm_vec3_dot(faces[i].normal, p);
+
+			
 			if(r > 0.0f) {
 				Face f = faces[i];
 				array_remove(faces, i);
@@ -362,33 +397,10 @@ vec3 collision_epa(vec3* simplex, Bounding_Shape* b1, Bounding_Shape* b2) {
 			}
 		}
 		for(int i = 0; i < array_length(edges); ++i) {
-			Face f = face_new(&distance, 0, &index, edges[i].a, edges[i].b, p);
+			Face f = face_new(edges[i].a, edges[i].b, p);
 			array_push(faces, f);
 		}
 		array_free(edges);
-
-		// If the dot is positive, the face is facing the support, meaning the
-		// shared edges can be deleted
-
-		// Debug rendering
-		vec4 color = (vec4) {1.0f, 0.0f, 0.0f, 1.0f};
-		for(int i = 0; i < array_length(faces); ++i) {
-			vec3 centroid = triangle_centroid(faces[i]);
-			r32 dot = gm_vec3_dot(faces[i].normal, p);
-
-			hoviz_render_point(centroid, (vec4){0.5f, 0.5f, 0.5f, 1.0f});
-			if(dot >= 0.0f) {
-				hoviz_render_vec3_from_start(centroid, faces[i].normal, color);
-			} else {
-				hoviz_render_vec3_from_start(centroid, faces[i].normal, (vec4){1.0f, 1.0f, 0.3f, 0.9f});
-			}
-
-			hoviz_render_line(faces[i].a, faces[i].b, (vec4){1.0f, 1.0f, 1.0f, 1.0f});
-			hoviz_render_line(faces[i].b, faces[i].c, (vec4){1.0f, 1.0f, 1.0f, 1.0f});
-			hoviz_render_line(faces[i].c, faces[i].a, (vec4){1.0f, 1.0f, 1.0f, 1.0f});
-		}
-
-		// 
 	}
 	array_free(faces);
 }
