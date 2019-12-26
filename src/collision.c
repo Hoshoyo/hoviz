@@ -3,9 +3,9 @@
 #include <light_array.h>
 #include "hoviz.h"
 
-vec4 hoviz_red = (vec4){1.0f, 0.0f, 0.0f, 1.0f};
-vec4 hoviz_green = (vec4){0.0f, 1.0f, 0.0f, 1.0f};
-vec4 hoviz_blue = (vec4){0.0f, 0.0f, 1.0f, 1.0f};
+vec4 hoviz_red = {1.0f, 0.0f, 0.0f, 1.0f};
+vec4 hoviz_green = {0.0f, 1.0f, 0.0f, 1.0f};
+vec4 hoviz_blue = {0.0f, 0.0f, 1.0f, 1.0f};
 
 // GJK
 

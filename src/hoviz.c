@@ -3,11 +3,45 @@
 #include <light_array.h>
 #include <ho_gl.h>
 #include <GLFW/glfw3.h>
-#include <unistd.h>
 #include "shader.h"
 #include "camera.h"
 #include "input.h"
 #include <time.h>
+
+#if defined(__linux__)
+#include <unistd.h>
+
+void os_usleep(u64 microseconds)
+{
+	usleep(microseconds);
+}
+
+r64 os_time_us()
+{
+	struct timespec t_spec;
+	clock_gettime(CLOCK_MONOTONIC_RAW, &t_spec);
+	u64 res = t_spec.tv_nsec + 1000000000 * t_spec.tv_sec;
+	return (r64)res / 1000.0;
+}
+#else
+static r64 perf_frequency;
+static void os_set_query_frequency() {
+	LARGE_INTEGER li = { 0 };
+	QueryPerformanceFrequency(&li);
+	perf_frequency = (r64)(li.QuadPart);
+}
+r64 os_time_us() {
+	static initialized = false;
+	if (!initialized) {
+		os_set_query_frequency();
+		initialized = true;
+	}
+
+	LARGE_INTEGER li = { 0 };
+	QueryPerformanceCounter(&li);
+	return ((r64)(li.QuadPart) / perf_frequency) * 1000000.0;
+}
+#endif
 
 #define CAMERA_ROTATE_VELOCITY_X 0.1f
 #define CAMERA_ROTATE_VELOCITY_Y 0.2f
@@ -56,18 +90,6 @@ typedef struct {
 
 static HoViz_Context ctx;
 
-void os_usleep(u64 microseconds)
-{
-	usleep(microseconds);
-}
-
-r64 os_time_us()
-{
-	struct timespec t_spec;
-	clock_gettime(CLOCK_MONOTONIC_RAW, &t_spec);
-	u64 res = t_spec.tv_nsec + 1000000000 * t_spec.tv_sec;
-	return (r64)res / 1000.0;
-}
 void window_get_size(int* width, int* height)
 {
 	glfwGetFramebufferSize(ctx.window, width, height);
@@ -370,12 +392,14 @@ hoviz_flush()
         ctx.fps = 0;
     }
 
+#if 0
     u64 sleep_time_us = (u64)(((1.0 / 60.0) * 1000000) - elapsed_us);
     if((r64)sleep_time_us < (1.0 / 60.0) * 1000000.0) {
         os_usleep(sleep_time_us);
     }
 
     ctx.elapsed += ((r64)sleep_time_us / 1000.0);
+#endif
 
     ctx.last_frame_start = os_time_us();
 
