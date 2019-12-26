@@ -338,7 +338,7 @@ vec3 collision_epa(vec3* simplex, Bounding_Shape* b1, Bounding_Shape* b2) {
 				}
 
 				if(index == i) {
-					hoviz_render_triangle(faces[i].a, faces[i].b, faces[i].c, (vec4){0.0f, 1.0f, 1.0f, 0.4f});
+					//hoviz_render_triangle(faces[i].a, faces[i].b, faces[i].c, (vec4){0.0f, 1.0f, 1.0f, 0.4f});
 				} 
 				hoviz_render_line(faces[i].a, faces[i].b, (vec4){1.0f, 1.0f, 1.0f, 1.0f});
 				hoviz_render_line(faces[i].b, faces[i].c, (vec4){1.0f, 1.0f, 1.0f, 1.0f});
@@ -363,9 +363,6 @@ vec3 collision_epa(vec3* simplex, Bounding_Shape* b1, Bounding_Shape* b2) {
 			vec3 centroid = triangle_centroid(faces[i]);
 			r32 r = gm_vec3_dot(faces[i].normal, gm_vec3_subtract(p, centroid));
 
-			//r32 r = gm_vec3_dot(faces[i].normal, p);
-
-			
 			if(r > 0.0f) {
 				Face f = faces[i];
 				array_remove(faces, i);
