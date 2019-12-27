@@ -7,6 +7,8 @@
 #include "quaternion.h"
 #include "collision.h"
 #include "hoviz.h"
+#include <stdlib.h>
+#include <string.h>
 
 #define DEGTORAD(degree) ((degree) * (3.141592654f / 180.0f))
 
@@ -91,7 +93,7 @@ void bshape_free(Bounding_Shape* b) {
 	free(b->vertices);
 }
 
-bool auto_transform = 0;
+bool auto_transform = 1;
 
 int main(int argc, char** argv) {
 	hoviz_init_3D();
@@ -142,6 +144,7 @@ int main(int argc, char** argv) {
 		} else {
 			velocity = 0.1f;
 		}
+
 		//if (auto_transform) 
 		{
 			if (hoviz_input_state.key_state[GLFW_KEY_LEFT]) {
@@ -183,6 +186,10 @@ int main(int argc, char** argv) {
 			global_counter--;
 			if(global_counter < 0) global_counter = 0;
 			hoviz_input_state.key_event[GLFW_KEY_Z] = 0;
+		}
+		if(hoviz_input_state.key_event[GLFW_KEY_O]) {
+			auto_transform = !auto_transform;
+			hoviz_input_state.key_event[GLFW_KEY_O] = 0;
 		}
 
 		// Render the shapes

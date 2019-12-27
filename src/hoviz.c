@@ -400,7 +400,7 @@ hoviz_flush()
         ctx.fps = 0;
     }
 
-#if 0
+#if defined(__linux__)
     u64 sleep_time_us = (u64)(((1.0 / 60.0) * 1000000) - elapsed_us);
     if((r64)sleep_time_us < (1.0 / 60.0) * 1000000.0) {
         os_usleep(sleep_time_us);

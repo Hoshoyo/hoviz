@@ -259,7 +259,7 @@ static Face face_new(vec3 v1, vec3 v2, vec3 v3) {
 	return f;
 }
 
-static int closest_face(Face* faces) {
+static int closest_face(Face* faces, bool invert_normals) {
 	r32 distance = FLT_MAX;
 	int index = -1;
 	for(int i = 0; i < array_length(faces); ++i) {
@@ -269,7 +269,7 @@ static int closest_face(Face* faces) {
 		vec3 normal = gm_vec3_cross(ba, ca);
 		normal = gm_vec3_normalize(normal);
 
-		if(gm_vec3_dot(normal, f.a) < 0.0f) {
+		if(invert_normals && gm_vec3_dot(normal, f.a) < 0.0f) {
 			normal = gm_vec3_negative(normal);
 		}
 
@@ -310,25 +310,17 @@ vec3 collision_epa(vec3* simplex, Bounding_Shape* b1, Bounding_Shape* b2) {
 	Face* faces = array_new_len(Face, 4);
 	array_length(faces) = 4;
 	faces[0] = face_new(simplex[0], simplex[1], simplex[2]);
-	faces[1] = face_new(simplex[0], simplex[1], simplex[3]);
-	faces[2] = face_new(simplex[1], simplex[2], simplex[3]);
+	faces[1] = face_new(simplex[0], simplex[3], simplex[1]);
+	faces[2] = face_new(simplex[1], simplex[3], simplex[2]);
 	faces[3] = face_new(simplex[0], simplex[2], simplex[3]);
 
 	for(int kk = 0; kk < 100; kk++)
 	{
 		// closest face is the face at index
-		index = closest_face(faces);
+		index = closest_face(faces, kk > 0);
 
 		// Find the new support in the normal direction of the closest face
 		vec3 p = collision_gjk_support(b1, b2, faces[index].normal);
-
-		// If the distance is 0, see if the support point in
-		// the other direction has distance zero aswell
-		if (faces[index].distance == 0.0f) {
-			//vec3 p2 = collision_gjk_support(b1, b2, gm_vec3_negative(faces[index].normal));
-			//r32 value = gm_vec3_dot(p, faces[index].normal) - faces[index].distance;
-			return (vec3) { 0, 0, 0 };
-		}
 
 #if 1
 		if(global_counter == kk) {
