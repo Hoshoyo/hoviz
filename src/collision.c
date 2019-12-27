@@ -274,6 +274,10 @@ static int closest_face(Face* faces, bool invert_normals) {
 		}
 
 		r32 d = gm_vec3_dot(f.a, normal);
+		// Ignore any normal 0, this causes the algorithm
+		// to think there is a face right next to it when it doesn't
+		if(gm_vec3_equal(normal, (vec3){0,0,0}))
+			d = FLT_MAX;
 
 		faces[i].distance = d;
 		faces[i].normal = normal;
@@ -340,7 +344,7 @@ vec3 collision_epa(vec3* simplex, Bounding_Shape* b1, Bounding_Shape* b2) {
 				}
 
 				if(index == i) {
-					//hoviz_render_triangle(faces[i].a, faces[i].b, faces[i].c, (vec4){0.0f, 1.0f, 1.0f, 0.4f});
+					hoviz_render_triangle(faces[i].a, faces[i].b, faces[i].c, (vec4){0.0f, 1.0f, 1.0f, 0.4f});
 				} 
 				hoviz_render_line(faces[i].a, faces[i].b, (vec4){1.0f, 1.0f, 1.0f, 1.0f});
 				hoviz_render_line(faces[i].b, faces[i].c, (vec4){1.0f, 1.0f, 1.0f, 1.0f});
