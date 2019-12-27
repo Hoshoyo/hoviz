@@ -114,6 +114,8 @@ init_points(int batch_size, u32 shader) {
     ctx.uloc_model = glGetUniformLocation(shader, "model_matrix");
     ctx.uloc_view = glGetUniformLocation(shader, "view_matrix");
     ctx.uloc_projection = glGetUniformLocation(shader, "projection_matrix");
+
+    return 0;
 }
 
 static int 
@@ -135,6 +137,8 @@ init_triangles(int batch_size, u32 shader) {
     ctx.uloc_model = glGetUniformLocation(shader, "model_matrix");
     ctx.uloc_view = glGetUniformLocation(shader, "view_matrix");
     ctx.uloc_projection = glGetUniformLocation(shader, "projection_matrix");
+
+    return 0;
 }
 
 static int
@@ -156,6 +160,8 @@ init_lines(int batch_size, u32 shader) {
     ctx.uloc_model = glGetUniformLocation(shader, "model_matrix");
     ctx.uloc_view = glGetUniformLocation(shader, "view_matrix");
     ctx.uloc_projection = glGetUniformLocation(shader, "projection_matrix");
+
+    return 0;
 }
 
 int hoviz_should_close() {
@@ -200,6 +206,8 @@ hoviz_init_3D()
     camera_quat_init(&ctx.camera, (vec3){3.0f, 3.0f, 10.0f}, -0.01f, -1000.0f, 90.0f);
 
     ctx.last_frame_start = os_time_us();
+
+    return 0;
 }
 
 void

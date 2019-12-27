@@ -298,6 +298,7 @@ static int edge_in(Edge* edges, Edge e) {
 }
 
 extern int global_counter;
+extern bool auto_transform;
 vec3 collision_epa(vec3* simplex, Bounding_Shape* b1, Bounding_Shape* b2) {
     // Simplex faces
     // 0 1 2
@@ -321,6 +322,15 @@ vec3 collision_epa(vec3* simplex, Bounding_Shape* b1, Bounding_Shape* b2) {
 		// Find the new support in the normal direction of the closest face
 		vec3 p = collision_gjk_support(b1, b2, faces[index].normal);
 
+		// If the distance is 0, see if the support point in
+		// the other direction has distance zero aswell
+		if (faces[index].distance == 0.0f) {
+			//vec3 p2 = collision_gjk_support(b1, b2, gm_vec3_negative(faces[index].normal));
+			//r32 value = gm_vec3_dot(p, faces[index].normal) - faces[index].distance;
+			return (vec3) { 0, 0, 0 };
+		}
+
+#if 1
 		if(global_counter == kk) {
 			hoviz_render_point(p, (vec4){1.0f, 0.0f, 1.0f, 1.0f});
 			// Debug rendering
@@ -345,6 +355,7 @@ vec3 collision_epa(vec3* simplex, Bounding_Shape* b1, Bounding_Shape* b2) {
 				hoviz_render_line(faces[i].c, faces[i].a, (vec4){1.0f, 1.0f, 1.0f, 1.0f});
 			}
 		}
+#endif
 
 		if(gm_vec3_dot(p, faces[index].normal) - faces[index].distance < 0.001f) 
 		{
@@ -399,7 +410,10 @@ vec3 collision_epa(vec3* simplex, Bounding_Shape* b1, Bounding_Shape* b2) {
 		}
 		array_free(edges);
 	}
+
 	array_free(faces);
+	assert(0); // this should be unreachable
+	return (vec3) { 0 };
 }
 
 #if 0

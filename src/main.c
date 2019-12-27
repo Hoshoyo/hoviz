@@ -60,11 +60,6 @@ static void normal_calc(vec3 v1, vec3 v2, vec3 v3) {
 int global_counter = 0;
 
 void render_cube(vec3* c, vec4 color) {
-	//hoviz_render_triangle(c[0], c[1], c[2], color);
-	//hoviz_render_triangle(c[2], c[1], c[3], color);
-//
-	//hoviz_render_triangle(c[0], c[2], c[1], color);
-	//hoviz_render_triangle(c[1], c[3], c[5], color);
 
 	hoviz_render_line(c[0], c[1], color);
 	hoviz_render_line(c[1], c[5], color);
@@ -81,6 +76,22 @@ void render_cube(vec3* c, vec4 color) {
 	hoviz_render_line(c[5], c[7], color);
 	hoviz_render_line(c[4], c[6], color);
 }
+
+Bounding_Shape copy_bshape(Bounding_Shape* b) {
+	Bounding_Shape result = { 0 };
+	result.vertices = (vec3*)calloc(1, b->vertex_count * sizeof(vec3));
+	result.vertex_count = b->vertex_count;
+
+	memcpy(result.vertices, b->vertices, b->vertex_count * sizeof(vec3));
+
+	return result;
+}
+
+void bshape_free(Bounding_Shape* b) {
+	free(b->vertices);
+}
+
+bool auto_transform = 0;
 
 int main(int argc, char** argv) {
 	hoviz_init_3D();
@@ -115,6 +126,7 @@ int main(int argc, char** argv) {
 
 	bool show_faces = true;
 	bool show_mink = true;
+
 	while(!hoviz_should_close())
 	{
 		// Render the 3 axis
@@ -130,24 +142,28 @@ int main(int argc, char** argv) {
 		} else {
 			velocity = 0.1f;
 		}
-		if(hoviz_input_state.key_state[GLFW_KEY_LEFT]) {
-			transform(vecs, 8, (vec3){-velocity, 0.0f, 0.0f});
+		//if (auto_transform) 
+		{
+			if (hoviz_input_state.key_state[GLFW_KEY_LEFT]) {
+				transform(vecs, 8, (vec3) { -velocity, 0.0f, 0.0f });
+			}
+			if (hoviz_input_state.key_state[GLFW_KEY_RIGHT]) {
+				transform(vecs, 8, (vec3) { velocity, 0.0f, 0.0f });
+			}
+			if (hoviz_input_state.key_state[GLFW_KEY_UP]) {
+				transform(vecs, 8, (vec3) { 0.0f, 0.0f, -velocity });
+			}
+			if (hoviz_input_state.key_state[GLFW_KEY_DOWN]) {
+				transform(vecs, 8, (vec3) { 0.0f, 0.0f, velocity });
+			}
+			if (hoviz_input_state.key_state[GLFW_KEY_R]) {
+				transform(vecs, 8, (vec3) { 0.0f, velocity, 0.0f });
+			}
+			if (hoviz_input_state.key_state[GLFW_KEY_F]) {
+				transform(vecs, 8, (vec3) { 0.0f, -velocity, 0.0f });
+			}
 		}
-		if(hoviz_input_state.key_state[GLFW_KEY_RIGHT]) {
-			transform(vecs, 8, (vec3){velocity, 0.0f, 0.0f});
-		}
-		if(hoviz_input_state.key_state[GLFW_KEY_UP]) {
-			transform(vecs, 8, (vec3){0.0f, 0.0f, -velocity});
-		}
-		if(hoviz_input_state.key_state[GLFW_KEY_DOWN]) {
-			transform(vecs, 8, (vec3){0.0f, 0.0f, velocity});
-		}
-		if(hoviz_input_state.key_state[GLFW_KEY_R]) {
-			transform(vecs, 8, (vec3){0.0f, velocity, 0.0f});
-		}
-		if(hoviz_input_state.key_state[GLFW_KEY_F]) {
-			transform(vecs, 8, (vec3){0.0f, -velocity, 0.0f});
-		}
+		
 		if(hoviz_input_state.key_state[GLFW_KEY_T]) {
 			hoviz_camera_reset();
 		}
@@ -186,12 +202,27 @@ int main(int argc, char** argv) {
 		GJK_Support_List sup_list = {0};
 		if(collision_gjk_collides(&sup_list, &b1, &b2)) {
 			assert(sup_list.current_index == 4);
+
+			Bounding_Shape b1_copy = copy_bshape(&b1);
+			Bounding_Shape b2_copy = copy_bshape(&b1);
+
 			vec3 penvec = collision_epa(sup_list.list, &b1, &b2);
 
-			transform(b1.vertices, b1.vertex_count, gm_vec3_negative(penvec));
-			//if(hoviz_input_state.key_event[GLFW_KEY_K]) {
-			//	hoviz_input_state.key_event[GLFW_KEY_K] = 0;
-			//}
+			if (isnan(penvec.x)) {
+				vec3 nn = collision_epa(sup_list.list, &b1_copy, &b2_copy);
+				auto_transform = 0;
+			}
+
+			if(auto_transform)
+				transform(b1.vertices, b1.vertex_count, gm_vec3_negative(penvec));
+
+			if(hoviz_input_state.key_event[GLFW_KEY_K]) {
+				hoviz_input_state.key_event[GLFW_KEY_K] = 0;
+				transform(b1.vertices, b1.vertex_count, gm_vec3_negative(penvec));
+			}
+
+			bshape_free(&b1_copy);
+			bshape_free(&b2_copy);
 
 			// Render the GJK simplex
 			if(show_faces) {
