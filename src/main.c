@@ -2,8 +2,10 @@
 #include <float.h>
 #define GRAPHICS_MATH_IMPLEMENT
 #define HOGL_IMPLEMENT
+#define STB_IMAGE_IMPLEMENTATION
 #include <ho_gl.h>
 #include <gm.h>
+#include <stb_image.h>
 #include "hoviz.h"
 #include <stdlib.h>
 #include <string.h>
@@ -11,10 +13,13 @@
 int main(int argc, char** argv) {
 	hoviz_init(0, 20);
 
-	unsigned int* data = malloc(100*100*4);
-	for(int i = 0; i < 100*100; ++i)
-		data[i] = 0x550000ff;
-	u32 texture = hoviz_texture_from_data((const char*)data, 100, 100);
+	//unsigned int* data = malloc(100*100*4);
+	//for(int i = 0; i < 100*100; ++i)
+	//	data[i] = 0x550000ff;
+	//u32 texture = hoviz_texture_from_data((const char*)data, 100, 100);
+
+	int width, height, channels;
+	u32 texture = hoviz_texture_from_file("test.png", &width, &height, &channels);
 
 	while(!hoviz_should_close())
 	{

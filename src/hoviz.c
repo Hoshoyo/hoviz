@@ -1,11 +1,14 @@
 #if defined IMPLEMENT_GL_GM
 #define GRAPHICS_MATH_IMPLEMENT
 #define HOGL_IMPLEMENT
+#define STB_IMAGE_IMPLEMENTATION
 #include <ho_gl.h>
 #include <gm.h>
+#include <stb_image.h>
 #else
 #include <gm.h>
 #include <ho_gl.h>
+#include <stb_image.h>
 #endif
 
 #include "hoviz.h"
@@ -577,4 +580,15 @@ void hoviz_set_3D_camera_speed(r32 movespeed, r32 xrot_speed, r32 yrot_speed)
 u32 hoviz_texture_from_data(const char* data, int width, int height)
 {
     return batch_texture_create_from_data(data, width, height);
+}
+
+u32 hoviz_texture_from_file(const char* filename, int* out_width, int* out_height, int* channels)
+{
+    stbi_set_flip_vertically_on_load(1);
+    char* data = stbi_load(filename, out_width, out_height, channels, 4);
+
+    u32 tid = hoviz_texture_from_data(data, *out_width, *out_height);
+
+    stbi_image_free(data);
+    return tid;
 }

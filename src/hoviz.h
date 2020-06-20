@@ -27,6 +27,7 @@ void hoviz_render_point(vec3 p, vec4 color);
 int  hoviz_should_close();
 void hoviz_camera_reset();
 u32  hoviz_texture_from_data(const char* data, int width, int height);
+u32  hoviz_texture_from_file(const char* filename, int* out_width, int* out_height, int* channels);
 
 void hoviz_render_2D_quad_textured(vec2 position, r32 width, r32 height, u32 texture_id);
 void hoviz_render_2D_quad(vec2 position, r32 width, r32 height, vec4 color);
