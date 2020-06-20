@@ -1,12 +1,24 @@
-#include "hoviz.h"
-#include <gm.h>
-#include <light_array.h>
+#if defined IMPLEMENT_GL_GM
+#define GRAPHICS_MATH_IMPLEMENT
+#define HOGL_IMPLEMENT
 #include <ho_gl.h>
+#include <gm.h>
+#else
+#include <gm.h>
+#include <ho_gl.h>
+#endif
+
+#include "hoviz.h"
+#include <light_array.h>
 #include <GLFW/glfw3.h>
 #include "shader.h"
 #include "camera.h"
 #include "input.h"
 #include <time.h>
+#include "batcher.h"
+#include <float.h>
+#include "font_load.h"
+#include "font_render.h"
 
 #if defined(__linux__)
 #include <unistd.h>
@@ -16,7 +28,7 @@ void os_usleep(u64 microseconds)
 	usleep(microseconds);
 }
 
-r64 os_time_us()
+r64 hoviz_os_time_us()
 {
 	struct timespec t_spec;
 	clock_gettime(CLOCK_MONOTONIC_RAW, &t_spec);
@@ -42,10 +54,6 @@ r64 os_time_us() {
 	return ((r64)(li.QuadPart) / perf_frequency) * 1000000.0;
 }
 #endif
-
-#define CAMERA_ROTATE_VELOCITY_X 0.1f
-#define CAMERA_ROTATE_VELOCITY_Y 0.2f
-#define CAMERA_VELOCITY 0.5f
 
 static void camera_update(Camera* camera, r64 delta_time);
 
@@ -81,6 +89,10 @@ typedef struct {
     int fps;
     r64 elapsed;
     r64 last_frame_start;
+
+    // 2D
+    Hobatch_Context batch_ctx;
+    Font_Info font_info;
 } HoViz_Context;
 
 typedef struct {
@@ -89,6 +101,16 @@ typedef struct {
 } HoViz_Vertex_3D;
 
 static HoViz_Context ctx;
+
+vec4 hoviz_color_red = (vec4){1,0,0,1};
+vec4 hoviz_color_green = (vec4){0,1,0,1};
+vec4 hoviz_color_blue = (vec4){0,0,1,1};
+vec4 hoviz_color_white = (vec4){1,1,1,1};
+vec4 hoviz_color_black = (vec4){0,0,0,1};
+vec4 hoviz_color_magenta = (vec4){1,0,1,1};
+vec4 hoviz_color_yellow = (vec4){1,1,0,1};
+vec4 hoviz_color_cyan = (vec4){0,1,1,1};
+vec4 hoviz_color_gray = (vec4){0.5f, 0.5f, 0.5f, 1};
 
 void window_get_size(int* width, int* height)
 {
@@ -204,8 +226,32 @@ hoviz_init_3D()
     init_points(size, ctx.shader);
 
     camera_quat_init(&ctx.camera, (vec3){3.0f, 3.0f, 10.0f}, -0.01f, -1000.0f, 90.0f);
+    ctx.camera.move_speed = 5.0f;
+    ctx.camera.xrot_speed = 0.2f;
+    ctx.camera.yrot_speed = 0.2f;
 
-    ctx.last_frame_start = os_time_us();
+    ctx.last_frame_start = hoviz_os_time_us();
+
+    return 0;
+}
+
+int
+hoviz_init(const char* font_filename, int font_size)
+{
+    if(hoviz_init_3D() == -1) return -1;
+
+    if(font_filename == 0)
+    {
+        font_filename = "/usr/share/fonts/truetype/freefont/FreeMono.ttf";
+        //"res/fonts/LiberationMono-Regular.ttf"
+    }
+
+	batch_init(&ctx.batch_ctx);
+	if(font_load(font_filename, &ctx.font_info, font_size) != FONT_LOAD_OK)
+	{
+		fprintf(stderr, "could not load font %s\n", font_filename);
+		return -1;
+	}
 
     return 0;
 }
@@ -389,7 +435,9 @@ hoviz_flush()
     render_lines();
     render_points();
 
-    r64 end_time = os_time_us();
+    batch_flush(&ctx.batch_ctx);
+
+    r64 end_time = hoviz_os_time_us();
     r64 elapsed_us = (end_time - ctx.last_frame_start);
     ctx.elapsed += (elapsed_us / 1000.0);
     ctx.fps++;
@@ -409,7 +457,7 @@ hoviz_flush()
     ctx.elapsed += ((r64)sleep_time_us / 1000.0);
 #endif
 
-    ctx.last_frame_start = os_time_us();
+    ctx.last_frame_start = hoviz_os_time_us();
 
     // Show this frame
     glfwSwapBuffers(ctx.window);
@@ -423,35 +471,39 @@ hoviz_flush()
     int width, height;
     window_get_size(&width, &height);
     glViewport(0, 0, width, height);
+    ctx.batch_ctx.window_width = width;
+    ctx.batch_ctx.window_height = height;
 }
 
 
 // CAMERA
 
-static void handle_mouse_change(bool move, r64 x, r64 y)
+static void handle_mouse_change(bool move, r64 x, r64 y, r64 last_x, r64 last_y)
 {
-    static bool reset_rotate = true;
-    static bool reset_move = true;
-    static r64 x_pos_old_rotate, y_pos_old_rotate;
-    static r64 x_pos_old_move, y_pos_old_move;
-    
-    if(move) {
-        if (!reset_rotate)
+    static bool reset;
+    if(!hoviz_input_state.last_mouse_pos_valid)
+    {
+        hoviz_input_state.last_mouse_position = (vec2){x, y};
+        hoviz_input_state.last_mouse_pos_valid = true;
+    }
+
+    if(move)
+    {
+        if(!reset)
         {
-            r64 x_difference = x - x_pos_old_rotate;
-            r64 y_difference = -y - y_pos_old_rotate;
+            r64 x_difference = x - hoviz_input_state.last_mouse_position.x;
+            r64 y_difference = hoviz_input_state.last_mouse_position.y - y;
 
             Camera* camera = &ctx.camera;
-            camera_quat_rotate_x(camera, (r32)x_difference * CAMERA_ROTATE_VELOCITY_X);
-            camera_quat_rotate_y(camera, (r32)y_difference * CAMERA_ROTATE_VELOCITY_Y);
+            camera_quat_rotate_x(camera, (r32)(x_difference) * camera->xrot_speed);
+            camera_quat_rotate_y(camera, (r32)(y_difference) * camera->yrot_speed);
         }
-
-        reset_rotate = false;
-        x_pos_old_rotate = x;
-        y_pos_old_rotate = -y;
+        reset = false;
     } else {
-        reset_rotate = true;
+        reset = true;
     }
+
+    hoviz_input_state.last_mouse_position = (vec2){x, y};
 }
 
 static void camera_update(Camera* camera, r64 delta_time)
@@ -464,20 +516,65 @@ static void camera_update(Camera* camera, r64 delta_time)
     }
 
     if (key_states['W'] || key_states['w']){
-        camera_quat_move_forward(camera, CAMERA_QUAT_MOVEMENT_SPEED_MODIFIER * CAMERA_VELOCITY * (r32)delta_time);
+        camera_quat_move_forward(camera, CAMERA_QUAT_MOVEMENT_SPEED_MODIFIER * camera->move_speed * (r32)delta_time);
     }
     else if (key_states['S'] || key_states['s']) {
-        camera_quat_move_forward(camera, -CAMERA_QUAT_MOVEMENT_SPEED_MODIFIER * CAMERA_VELOCITY * (r32)delta_time);
+        camera_quat_move_forward(camera, -CAMERA_QUAT_MOVEMENT_SPEED_MODIFIER * camera->move_speed * (r32)delta_time);
     }
     else if (key_states['A'] || key_states['a']) {
-        camera_quat_move_right(camera, -CAMERA_QUAT_MOVEMENT_SPEED_MODIFIER * CAMERA_VELOCITY * (r32)delta_time);
+        camera_quat_move_right(camera, -CAMERA_QUAT_MOVEMENT_SPEED_MODIFIER * camera->move_speed * (r32)delta_time);
     }
     else if (key_states['D'] || key_states['d']) {
-        camera_quat_move_right(camera, CAMERA_QUAT_MOVEMENT_SPEED_MODIFIER * CAMERA_VELOCITY * (r32)delta_time);
+        camera_quat_move_right(camera, CAMERA_QUAT_MOVEMENT_SPEED_MODIFIER * camera->move_speed * (r32)delta_time);
     }
-    handle_mouse_change(hoviz_input_state.mouse_buttons[1].state, hoviz_input_state.mouse_position.x, hoviz_input_state.mouse_position.y);
+    handle_mouse_change(hoviz_input_state.mouse_buttons[1].state, 
+        hoviz_input_state.mouse_position.x, hoviz_input_state.mouse_position.y,
+        hoviz_input_state.mouse_buttons[GLFW_MOUSE_BUTTON_RIGHT].position.x,
+        hoviz_input_state.mouse_buttons[GLFW_MOUSE_BUTTON_RIGHT].position.y
+    );
 }
 
 void hoviz_camera_reset() {
     camera_quat_init(&ctx.camera, (vec3){3.0f, 3.0f, 10.0f}, -0.01f, -1000.0f, 90.0f);
+}
+
+void hoviz_render_2D_quad(vec2 position, r32 width, r32 height, vec4 color)
+{
+    batch_render_quad_color_solid(&ctx.batch_ctx, (vec3){position.x, position.y, 0}, width, height, color);
+}
+
+void hoviz_render_2D_quad_textured(vec2 position, r32 width, r32 height, u32 texture_id)
+{
+    batch_render_quad_textured(&ctx.batch_ctx, (vec3){position.x, position.y, 0.0f}, width, height, texture_id);
+}
+
+void hoviz_render_2D_box(vec2 bl, vec2 tr, vec4 color)
+{
+    batch_render_quad_color_solid(&ctx.batch_ctx, 
+        (vec3){bl.x, bl.y, 0}, 
+        tr.x - bl.x, 
+        tr.y - bl.y, 
+        color);
+}
+
+void hoviz_render_2D_line(vec2 start, vec2 end, vec4 color)
+{
+    batch_render_line(&ctx.batch_ctx, (vec3){start.x, start.y, 0}, (vec3){end.x, end.y, 0}, color);
+}
+
+void hoviz_render_text(vec2 position, const char* text, int length, vec4 color)
+{
+    text_render(&ctx.batch_ctx, &ctx.font_info, text, length, 0, position, (vec4){0,0,FLT_MAX,FLT_MAX}, color);
+}
+
+void hoviz_set_3D_camera_speed(r32 movespeed, r32 xrot_speed, r32 yrot_speed)
+{
+    if(movespeed != 0.0f) ctx.camera.move_speed = movespeed;
+    if(xrot_speed != 0.0f) ctx.camera.xrot_speed = xrot_speed;
+    if(yrot_speed != 0.0f) ctx.camera.yrot_speed = yrot_speed;
+}
+
+u32 hoviz_texture_from_data(const char* data, int width, int height)
+{
+    return batch_texture_create_from_data(data, width, height);
 }

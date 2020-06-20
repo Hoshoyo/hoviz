@@ -4,6 +4,9 @@
 
 void
 mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
+    r64 x = 0.0, y = 0.0;
+    glfwGetCursorPos(window, &x, &y);
+    hoviz_input_state.mouse_position = (vec2){x, y};
 	switch (action) {
 		case GLFW_PRESS: {
             hoviz_input_state.mouse_buttons[button].state = 1;

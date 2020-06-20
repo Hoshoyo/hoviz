@@ -19,6 +19,7 @@ typedef struct
 	Camera_Common c;
 	Quaternion rotation;
 	Quaternion yrotation;
+	r32 move_speed, xrot_speed, yrot_speed;
 } Camera;
 
 void camera_quat_init(Camera* camera, vec3 position, r32 near_plane, r32 far_plane, r32 fov);
