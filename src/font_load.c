@@ -58,7 +58,7 @@ font_load(const s8* filepath, Font_Info* font, s32 pixel_point)
   s32 max_width = font->face->size->metrics.max_advance >> 6;
   s32 num_glyphs = font->face->num_glyphs;
   s32 num_glyphs_loaded = 0;
-  s32 size = (s32) next_2_pow((s32) sqrtf((r32) (max_width * num_glyphs)));
+  s32 size = (s32) next_2_pow((s32) sqrtf((r32) (max_width * num_glyphs))) * 2;
   r32 atlasf_size = (r32) size;
   font->atlas_size = size;
 

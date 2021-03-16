@@ -34,6 +34,7 @@ void hoviz_render_2D_quad(vec2 position, r32 width, r32 height, vec4 color);
 void hoviz_render_2D_box(vec2 bl, vec2 tr, vec4 color);
 void hoviz_render_2D_line(vec2 start, vec2 end, vec4 color);
 void hoviz_render_text(vec2 position, const char* text, int length, vec4 color);
+void hoviz_window_get_size(int* width, int* height);
 
 void hoviz_set_3D_camera_speed(r32 movespeed, r32 xrot_speed, r32 yrot_speed);
 

@@ -2,7 +2,7 @@
 #include <math.h>
 #include "quaternion.h"
 
-void window_get_size(int* width, int* height);
+void hoviz_window_get_size(int* width, int* height);
 
 vec3 camera_get_view(const Camera_Common* camera)
 {
@@ -20,7 +20,7 @@ static void camera_recalculate_projection_matrix(Camera_Common* camera)
 {
     s32 window_width;
     s32 window_height;
-	window_get_size(&window_width, &window_height);
+	hoviz_window_get_size(&window_width, &window_height);
     // ---------------------------------------------------------
 
 	r32 _near = camera->near_plane;

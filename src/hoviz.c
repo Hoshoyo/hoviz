@@ -115,7 +115,7 @@ vec4 hoviz_color_yellow = (vec4){1,1,0,1};
 vec4 hoviz_color_cyan = (vec4){0,1,1,1};
 vec4 hoviz_color_gray = (vec4){0.5f, 0.5f, 0.5f, 1};
 
-void window_get_size(int* width, int* height)
+void hoviz_window_get_size(int* width, int* height)
 {
 	glfwGetFramebufferSize(ctx.window, width, height);
 }
@@ -245,7 +245,10 @@ hoviz_init(const char* font_filename, int font_size)
 
     if(font_filename == 0)
     {
-        font_filename = "/usr/share/fonts/truetype/freefont/FreeMono.ttf";
+        //font_filename = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf";
+        font_filename = "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf";
+        //font_filename = "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf";
+
         //"res/fonts/LiberationMono-Regular.ttf"
     }
 
@@ -472,7 +475,7 @@ hoviz_flush()
     // clear next frame
     glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
     int width, height;
-    window_get_size(&width, &height);
+    hoviz_window_get_size(&width, &height);
     glViewport(0, 0, width, height);
     ctx.batch_ctx.window_width = width;
     ctx.batch_ctx.window_height = height;
