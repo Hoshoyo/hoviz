@@ -45,7 +45,7 @@ static void os_set_query_frequency() {
 	QueryPerformanceFrequency(&li);
 	perf_frequency = (r64)(li.QuadPart);
 }
-r64 os_time_us() {
+r64 hoviz_os_time_us() {
 	static initialized = false;
 	if (!initialized) {
 		os_set_query_frequency();
@@ -105,15 +105,15 @@ typedef struct {
 
 static HoViz_Context ctx;
 
-vec4 hoviz_color_red = (vec4){1,0,0,1};
-vec4 hoviz_color_green = (vec4){0,1,0,1};
-vec4 hoviz_color_blue = (vec4){0,0,1,1};
-vec4 hoviz_color_white = (vec4){1,1,1,1};
-vec4 hoviz_color_black = (vec4){0,0,0,1};
-vec4 hoviz_color_magenta = (vec4){1,0,1,1};
-vec4 hoviz_color_yellow = (vec4){1,1,0,1};
-vec4 hoviz_color_cyan = (vec4){0,1,1,1};
-vec4 hoviz_color_gray = (vec4){0.5f, 0.5f, 0.5f, 1};
+//vec4 hoviz_color_red = (vec4){1,0,0,1};
+//vec4 hoviz_color_green = (vec4){0,1,0,1};
+//vec4 hoviz_color_blue = (vec4){0,0,1,1};
+//vec4 hoviz_color_white = (vec4){1,1,1,1};
+//vec4 hoviz_color_black = (vec4){0,0,0,1};
+//vec4 hoviz_color_magenta = (vec4){1,0,1,1};
+//vec4 hoviz_color_yellow = (vec4){1,1,0,1};
+//vec4 hoviz_color_cyan = (vec4){0,1,1,1};
+//vec4 hoviz_color_gray = (vec4){0.5f, 0.5f, 0.5f, 1};
 
 void hoviz_window_get_size(int* width, int* height)
 {
