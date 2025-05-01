@@ -246,10 +246,10 @@ hoviz_init(const char* font_filename, int font_size)
     if(font_filename == 0)
     {
         //font_filename = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf";
-        font_filename = "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf";
+        //font_filename = "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf";
         //font_filename = "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf";
 
-        //"res/fonts/LiberationMono-Regular.ttf"
+        font_filename = "res/fonts/LiberationMono-Regular.ttf";
     }
 
 	batch_init(&ctx.batch_ctx);
@@ -431,17 +431,17 @@ render_points() {
 void
 hoviz_flush() 
 {
-    camera_update(&ctx.camera, 1.0 / 60.0);
+    //camera_update(&ctx.camera, 1.0 / 60.0);
 
     // Setup uniforms
     
-    camera_quat_force_matrix_recalculation(&ctx.camera);
+    //camera_quat_force_matrix_recalculation(&ctx.camera);
 
-    render_triangles();
-    render_lines();
-    render_points();
+    //render_triangles();
+    //render_lines();
+    //render_points();
 
-    batch_flush(&ctx.batch_ctx);
+    //batch_flush(&ctx.batch_ctx);
 
     r64 end_time = hoviz_os_time_us();
     r64 elapsed_us = (end_time - ctx.last_frame_start);
