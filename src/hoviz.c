@@ -444,7 +444,7 @@ hoviz_flush()
     ctx.fps++;
 
     if(ctx.elapsed >= 1000.0) {
-        printf("FPS: %d (average frame time: %fms)\n", ctx.fps, ctx.elapsed / (r64)ctx.fps);
+        //printf("FPS: %d (average frame time: %fms)\n", ctx.fps, ctx.elapsed / (r64)ctx.fps);
         ctx.elapsed = 0.0;
         ctx.fps = 0;
     }
