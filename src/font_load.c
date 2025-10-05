@@ -69,15 +69,24 @@ font_load(const s8* filepath, Font_Info* font, s32 pixel_point)
   // allocate memory for the texture atlas of the font
   font->atlas_data = (u8 *) calloc(1, size * size * 4);
 
-  for (u32 i = 0; i < 1024; ++i)
+  u32 index = 0;
+  FT_ULong char_code = FT_Get_First_Char(font->face, &index);
+  int i = 0;
+  while(true)
   {
-    u32 index = FT_Get_Char_Index(font->face, i);
+    index = 0;
+    char_code = FT_Get_Next_Char(font->face, char_code, &index);
+
+    //index = FT_Get_Char_Index(font->face, i);
     error = FT_Load_Glyph(font->face, index, FT_LOAD_RENDER);
 
     if (index == 0)
     {
-      continue;
+      //continue;
+      break;
     }
+
+    i = char_code;
 
     s32 width = font->face->glyph->bitmap.width;
     s32 height = font->face->glyph->bitmap.rows;

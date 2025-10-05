@@ -17,7 +17,7 @@ typedef struct {
     bool last_mouse_pos_valid;
 } HoViz_Input_State;
 
-int  hoviz_init(const char* font_filename, int font_size);
+int  hoviz_init(const char* font_filename, int font_size, int window_width, int window_height);
 void hoviz_flush();
 void hoviz_render_vec3(vec3 v, vec4 color);
 void hoviz_render_vec3_from_start(vec3 start, vec3 v, vec4 color);
@@ -26,8 +26,9 @@ void hoviz_render_triangle(vec3 v1, vec3 v2, vec3 v3, vec4 color);
 void hoviz_render_point(vec3 p, vec4 color);
 int  hoviz_should_close();
 void hoviz_camera_reset();
-u32  hoviz_texture_from_data(const char* data, int width, int height);
+u32  hoviz_texture_from_data(const void* data, int width, int height);
 u32  hoviz_texture_from_file(const char* filename, int* out_width, int* out_height, int* channels);
+void hoviz_texture_update(u32 texture, int x, int y, int width, int height, const void* subpixels);
 
 void hoviz_render_2D_quad_textured(vec2 position, r32 width, r32 height, u32 texture_id);
 void hoviz_render_2D_quad(vec2 position, r32 width, r32 height, vec4 color);

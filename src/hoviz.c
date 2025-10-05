@@ -105,15 +105,15 @@ typedef struct {
 
 static HoViz_Context ctx;
 
-//vec4 hoviz_color_red = (vec4){1,0,0,1};
-//vec4 hoviz_color_green = (vec4){0,1,0,1};
-//vec4 hoviz_color_blue = (vec4){0,0,1,1};
-//vec4 hoviz_color_white = (vec4){1,1,1,1};
-//vec4 hoviz_color_black = (vec4){0,0,0,1};
-//vec4 hoviz_color_magenta = (vec4){1,0,1,1};
-//vec4 hoviz_color_yellow = (vec4){1,1,0,1};
-//vec4 hoviz_color_cyan = (vec4){0,1,1,1};
-//vec4 hoviz_color_gray = (vec4){0.5f, 0.5f, 0.5f, 1};
+vec4 hoviz_color_red = {1,0,0,1};
+vec4 hoviz_color_green = {0,1,0,1};
+vec4 hoviz_color_blue = {0,0,1,1};
+vec4 hoviz_color_white = {1,1,1,1};
+vec4 hoviz_color_black = {0,0,0,1};
+vec4 hoviz_color_magenta = {1,0,1,1};
+vec4 hoviz_color_yellow = {1,1,0,1};
+vec4 hoviz_color_cyan = {0,1,1,1};
+vec4 hoviz_color_gray = {0.5f, 0.5f, 0.5f, 1};
 
 void hoviz_window_get_size(int* width, int* height)
 {
@@ -194,14 +194,14 @@ int hoviz_should_close() {
 }
 
 int 
-hoviz_init_3D()
+hoviz_init_3D(int window_width, int window_height)
 {
     if(glfwInit() == -1) {
         printf("Error: glfw could not initialize\n");
         return -1;
     }
 
-    ctx.window = glfwCreateWindow(640, 480, "HoViz", 0, 0);
+    ctx.window = glfwCreateWindow(window_width, window_height, "HoViz", 0, 0);
     if (!ctx.window) {
         printf("Error: glfw could not create window\n");
         glfwTerminate();
@@ -239,18 +239,13 @@ hoviz_init_3D()
 }
 
 int
-hoviz_init(const char* font_filename, int font_size)
+hoviz_init(const char* font_filename, int font_size, int window_width, int window_height)
 {
-    if(hoviz_init_3D() == -1) return -1;
+    if(hoviz_init_3D(window_width, window_height) == -1) 
+        return -1;
 
     if(font_filename == 0)
-    {
-        //font_filename = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf";
-        font_filename = "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf";
-        //font_filename = "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf";
-
-        //"res/fonts/LiberationMono-Regular.ttf"
-    }
+        font_filename = "res/fonts/LiberationMono-Regular.ttf";
 
 	batch_init(&ctx.batch_ctx);
 	if(font_load(font_filename, &ctx.font_info, font_size) != FONT_LOAD_OK)
@@ -580,9 +575,15 @@ void hoviz_set_3D_camera_speed(r32 movespeed, r32 xrot_speed, r32 yrot_speed)
     if(yrot_speed != 0.0f) ctx.camera.yrot_speed = yrot_speed;
 }
 
-u32 hoviz_texture_from_data(const char* data, int width, int height)
+u32 hoviz_texture_from_data(const void* data, int width, int height)
 {
     return batch_texture_create_from_data(data, width, height);
+}
+
+void
+hoviz_texture_update(u32 texture, int x, int y, int width, int height, const void* subpixels)
+{
+	glTextureSubImage2D(texture, 0, x, y, width, height, GL_RGBA, GL_UNSIGNED_BYTE, subpixels);
 }
 
 u32 hoviz_texture_from_file(const char* filename, int* out_width, int* out_height, int* channels)

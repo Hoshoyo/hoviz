@@ -44,7 +44,7 @@ typedef struct {
   u8* atlas_data;
 
   FT_Face face;
-  Character characters[65536];
+  Character characters[65536*16];
 } Font_Info;
 
 Font_Load_Status font_load(const s8* filepath, Font_Info* font, s32 pixel_point);
