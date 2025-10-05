@@ -22,7 +22,7 @@ typedef struct {
 } Hobatch_Vertex;
 
 const char vshader[] = 
-"#version 330 core\n"
+"#version 400 core\n"
 "layout(location = 0) in vec3  v_position;\n"
 "layout(location = 1) in vec2  v_text_coords;\n"
 "layout(location = 2) in vec4  v_color;\n"
@@ -54,7 +54,7 @@ const char vshader[] =
 "}\n";
 
 const char fshader[] = 
-"#version 330 core\n"
+"#version 400 core\n"
 "in vec2 o_text_coords;\n"
 "in vec4 o_color;\n"
 "in float o_texture_index;\n"

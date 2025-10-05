@@ -1,5 +1,6 @@
 all:
-	gcc -Iinclude -g src/*.c -o bin/hoviz -lm -lGL lib/libfreetype.a -lglfw
+	mkdir -p bin
+	gcc -Iinclude -Isrc -g src/*.c main.c -o bin/hoviz -lm -lGL -lfreetype -lglfw
 static-lib: extract-freetype
 	cd bin; gcc -DIMPLEMENT_GL_GM=1 -I../include -c ../src/batcher.c ../src/camera.c ../src/font_load.c ../src/font_render.c ../src/hoviz.c ../src/input.c ../src/os.c ../src/quaternion.c ../src/shader.c
 	cd bin; ar rcs libhoviz.a *.o temp/*.o

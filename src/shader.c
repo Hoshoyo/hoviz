@@ -18,7 +18,6 @@ u32 shader_load_from_buffer(const s8* vert_shader, const s8* frag_shader, int ve
 	if (!compile_status) {
 		char error_buffer[512] = { 0 };
 		glGetShaderInfoLog(vs_id, sizeof(error_buffer), NULL, error_buffer);
-		printf("HELLO WORLD\n");
 		printf("shader_load: Error compiling vertex shader: %s\n", error_buffer);
 		return -1;
 	}
